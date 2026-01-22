@@ -27,6 +27,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { usePlayer } from '@/store/player-store';
+import { Switch } from '@/components/ui/switch';
 
 export default function ArtistDashboard() {
   const { sidebarWidth, isSidebarCollapsed } = usePlayer();
@@ -83,7 +84,7 @@ export default function ArtistDashboard() {
     },
   ];
 
-  const tracks = [
+  const [tracks, setTracks] = useState([
     {
       id: '1',
       title: 'Hit Song 1',
@@ -120,7 +121,21 @@ export default function ArtistDashboard() {
       releaseDate: null,
       status: 'draft',
     },
-  ];
+  ]);
+
+  const toggleTrackStatus = (trackId: string) => {
+    setTracks((prevTracks) =>
+      prevTracks.map((track) => {
+        if (track.id === trackId) {
+          const newStatus = track.status === 'published' ? 'unpublished' : 'published';
+          // TODO: Call API to update track status
+          console.log(`Updating track ${trackId} to ${newStatus}`);
+          return { ...track, status: newStatus };
+        }
+        return track;
+      })
+    );
+  };
 
   const recentActivity = [
     { type: 'stream', message: 'Track "Hit Song 1" reached 450K streams', time: '2 hours ago' },
@@ -197,7 +212,12 @@ export default function ArtistDashboard() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+            <Button
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+              onClick={() => {
+                window.location.href = '/artist/upload';
+              }}
+            >
               <Upload className="h-4 w-4 mr-2" />
               Upload Track
             </Button>
@@ -335,7 +355,12 @@ export default function ArtistDashboard() {
             <Card className="bg-white/5 backdrop-blur-sm border-purple-500/30">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-white">Your Tracks</CardTitle>
-                <Button className="bg-purple-600 hover:bg-purple-700">
+                <Button
+                  className="bg-purple-600 hover:bg-purple-700"
+                  onClick={() => {
+                    window.location.href = '/artist/upload';
+                  }}
+                >
                   <Upload className="h-4 w-4 mr-2" />
                   Upload New Track
                 </Button>
@@ -364,6 +389,16 @@ export default function ArtistDashboard() {
                                 Published
                               </Badge>
                             )}
+                            {track.status === 'unpublished' && (
+                              <Badge variant="secondary" className="bg-gray-600/30 text-gray-300 text-xs">
+                                Unpublished
+                              </Badge>
+                            )}
+                            {track.status === 'draft' && (
+                              <Badge variant="secondary" className="bg-yellow-600/30 text-yellow-300 text-xs">
+                                Draft
+                              </Badge>
+                            )}
                           </div>
                           <div className="flex gap-4 mt-1 text-xs text-gray-400">
                             <span>{track.streams.toLocaleString()} streams</span>
@@ -380,13 +415,28 @@ export default function ArtistDashboard() {
                           <p className="text-xs text-gray-400">revenue</p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
-                          <Share2 className="h-4 w-4" />
-                        </Button>
+                      <div className="flex items-center gap-4">
+                        {/* Publish/Unpublish Toggle */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400 whitespace-nowrap">
+                            {track.status === 'published' ? 'Published' : track.status === 'unpublished' ? 'Unpublished' : 'Draft'}
+                          </span>
+                          {track.status !== 'draft' && (
+                            <Switch
+                              checked={track.status === 'published'}
+                              onCheckedChange={() => toggleTrackStatus(track.id)}
+                              className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-600"
+                            />
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}

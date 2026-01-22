@@ -23,12 +23,16 @@ import {
   Code,
   User,
   BarChart3,
+  ChevronDown,
+  Crown,
 } from 'lucide-react';
 
 export function Sidebar() {
   const router = useRouter();
   const { sidebarWidth, isSidebarCollapsed, setSidebarWidth, toggleSidebarCollapsed } = usePlayer();
   const [isResizing, setIsResizing] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isPlaylistsOpen, setIsPlaylistsOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<HTMLDivElement>(null);
 
@@ -75,6 +79,7 @@ export function Sidebar() {
     { icon: Search, label: 'Search', path: '/search' },
     { icon: Library, label: 'Your Library', path: '/library' },
     { icon: User, label: 'Profile', path: '/profile' },
+    { icon: Crown, label: 'Premium', path: '/premium' },
   ];
 
   const playlists = [
@@ -147,9 +152,9 @@ export function Sidebar() {
             );
           })}
 
-          {/* Artist Dashboard Link */}
+          {/* Artist Dashboard & Signup Links */}
           {!isSidebarCollapsed && (
-            <div className="pt-4">
+            <div className="pt-4 space-y-2">
               <Button
                 variant="ghost"
                 className="w-full justify-start text-white hover:bg-purple-600/30 border border-purple-500/30"
@@ -158,10 +163,18 @@ export function Sidebar() {
                 <BarChart3 className="h-5 w-5 mr-3 shrink-0" />
                 <span>Artist Dashboard</span>
               </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-white hover:bg-purple-600/30 border border-purple-500/30"
+                onClick={() => router.push('/artist/signup')}
+              >
+                <User className="h-5 w-5 mr-3 shrink-0" />
+                <span>Artist Signup</span>
+              </Button>
             </div>
           )}
 
-          {/* Onboarding Section */}
+          {/* Onboarding Section - Dropdown */}
           <div className="pt-6">
             {isSidebarCollapsed ? (
               <Button
@@ -172,54 +185,98 @@ export function Sidebar() {
                 <GraduationCap className="h-5 w-5" />
               </Button>
             ) : (
-              <>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">
-                  Onboarding
-                </h3>
-                <div className="space-y-1">
-                  {onboardingGuides.map((guide) => {
-                    const Icon = guide.icon;
-                    return (
-                      <Button
-                        key={guide.label}
-                        variant="ghost"
-                        className="w-full justify-start text-gray-300 hover:text-white hover:bg-white/10"
-                        onClick={() => {
-                          router.push(guide.path);
-                        }}
-                      >
-                        <Icon className="h-4 w-4 mr-3 shrink-0" />
-                        <span className="flex-1 text-left truncate">{guide.label}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </>
+              <div>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-between text-gray-300 hover:text-white hover:bg-white/10 px-3"
+                  onClick={() => setIsOnboardingOpen(!isOnboardingOpen)}
+                >
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Onboarding</span>
+                  </div>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isOnboardingOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </Button>
+                {isOnboardingOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="space-y-1 pl-3 pt-1">
+                      {onboardingGuides.map((guide) => {
+                        const Icon = guide.icon;
+                        return (
+                          <Button
+                            key={guide.label}
+                            variant="ghost"
+                            className="w-full justify-start text-gray-300 hover:text-white hover:bg-white/10"
+                            onClick={() => {
+                              router.push(guide.path);
+                            }}
+                          >
+                            <Icon className="h-4 w-4 mr-3 shrink-0" />
+                            <span className="flex-1 text-left truncate">{guide.label}</span>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Playlists Section */}
+          {/* Playlists Section - Dropdown */}
           {!isSidebarCollapsed && (
             <div className="pt-6">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">
-                Playlists
-              </h3>
-              <div className="space-y-1">
-                {playlists.map((playlist) => {
-                  const Icon = playlist.icon;
-                  return (
-                    <Button
-                      key={playlist.label}
-                      variant="ghost"
-                      className="w-full justify-start text-gray-300 hover:text-white hover:bg-white/10"
-                    >
-                      <Icon className="h-4 w-4 mr-3 shrink-0" />
-                      <span className="flex-1 text-left truncate">{playlist.label}</span>
-                      <span className="text-xs text-gray-500 ml-2">{playlist.count}</span>
-                    </Button>
-                  );
-                })}
-              </div>
+              <Button
+                variant="ghost"
+                className="w-full justify-between text-gray-300 hover:text-white hover:bg-white/10 px-3"
+                onClick={() => setIsPlaylistsOpen(!isPlaylistsOpen)}
+              >
+                <div className="flex items-center gap-2">
+                  <Music className="h-4 w-4" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Playlists</span>
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    isPlaylistsOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </Button>
+              {isPlaylistsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-1 pl-3 pt-1">
+                    {playlists.map((playlist) => {
+                      const Icon = playlist.icon;
+                      return (
+                        <Button
+                          key={playlist.label}
+                          variant="ghost"
+                          className="w-full justify-start text-gray-300 hover:text-white hover:bg-white/10"
+                        >
+                          <Icon className="h-4 w-4 mr-3 shrink-0" />
+                          <span className="flex-1 text-left truncate">{playlist.label}</span>
+                          <span className="text-xs text-gray-500 ml-2">{playlist.count}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
             </div>
           )}
         </nav>

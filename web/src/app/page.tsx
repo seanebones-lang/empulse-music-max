@@ -394,10 +394,10 @@ export default function Home() {
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        className="audio-player fixed bottom-0 z-50 bg-gradient-to-r from-purple-900/90 backdrop-blur-xl border-t border-purple-500/50 shadow-2xl transition-all duration-200"
-        style={{ left: `${sidebarOffset}px` }}
+        className="audio-player fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900/90 backdrop-blur-xl border-t border-purple-500/50 shadow-2xl transition-all duration-200"
+        style={{ left: `${sidebarOffset}px`, width: `calc(100% - ${sidebarOffset}px)` }}
       >
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           {/* Expand/Collapse Toggle */}
           <div className="flex justify-end p-2">
             <Button
@@ -415,7 +415,7 @@ export default function Home() {
           </div>
 
           {/* Main Player Controls */}
-          <div className="px-6 pb-6 flex items-center gap-6 flex-wrap">
+          <div className="px-6 pb-6 flex items-center gap-6 flex-wrap max-w-7xl mx-auto">
             {/* Artwork */}
             {currentTrack && (
               <Image
