@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { usePlayer } from '@/store/player-store';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,9 +16,17 @@ import {
   ChevronLeft,
   ChevronRight,
   GripVertical,
+  GraduationCap,
+  Users,
+  Mic,
+  UserCog,
+  Code,
+  User,
+  BarChart3,
 } from 'lucide-react';
 
 export function Sidebar() {
+  const router = useRouter();
   const { sidebarWidth, isSidebarCollapsed, setSidebarWidth, toggleSidebarCollapsed } = usePlayer();
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -62,15 +71,24 @@ export function Sidebar() {
   };
 
   const navItems = [
-    { icon: Home, label: 'Home', active: true },
-    { icon: Search, label: 'Search' },
-    { icon: Library, label: 'Your Library' },
+    { icon: Home, label: 'Home', active: true, path: '/' },
+    { icon: Search, label: 'Search', path: '/search' },
+    { icon: Library, label: 'Your Library', path: '/library' },
+    { icon: User, label: 'Profile', path: '/profile' },
   ];
 
   const playlists = [
     { icon: Music, label: 'Liked Songs', count: 125 },
     { icon: Heart, label: 'Favorites', count: 42 },
     { icon: Play, label: 'Recently Played', count: 89 },
+  ];
+
+  const onboardingGuides = [
+    { icon: Users, label: 'Listeners', path: '/onboarding/listeners' },
+    { icon: Heart, label: 'Sponsors', path: '/onboarding/sponsors' },
+    { icon: Mic, label: 'Artists', path: '/onboarding/artists' },
+    { icon: UserCog, label: 'Artist Management', path: '/onboarding/artist-management' },
+    { icon: Code, label: 'Developer', path: '/onboarding/developer' },
   ];
 
   const currentWidth = isSidebarCollapsed ? collapsedWidth : sidebarWidth;
@@ -117,12 +135,68 @@ export function Sidebar() {
                 className={`w-full justify-start text-white ${
                   item.active ? 'bg-purple-600/30 hover:bg-purple-600/40' : 'hover:bg-white/10'
                 }`}
+                onClick={() => {
+                  if (item.path) {
+                    router.push(item.path);
+                  }
+                }}
               >
                 <Icon className="h-5 w-5 mr-3 shrink-0" />
                 {!isSidebarCollapsed && <span>{item.label}</span>}
               </Button>
             );
           })}
+
+          {/* Artist Dashboard Link */}
+          {!isSidebarCollapsed && (
+            <div className="pt-4">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-white hover:bg-purple-600/30 border border-purple-500/30"
+                onClick={() => router.push('/artist/dashboard')}
+              >
+                <BarChart3 className="h-5 w-5 mr-3 shrink-0" />
+                <span>Artist Dashboard</span>
+              </Button>
+            </div>
+          )}
+
+          {/* Onboarding Section */}
+          <div className="pt-6">
+            {isSidebarCollapsed ? (
+              <Button
+                variant="ghost"
+                className="w-full justify-center text-gray-300 hover:text-white hover:bg-white/10"
+                title="Onboarding Guides"
+              >
+                <GraduationCap className="h-5 w-5" />
+              </Button>
+            ) : (
+              <>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">
+                  Onboarding
+                </h3>
+                <div className="space-y-1">
+                  {onboardingGuides.map((guide) => {
+                    const Icon = guide.icon;
+                    return (
+                      <Button
+                        key={guide.label}
+                        variant="ghost"
+                        className="w-full justify-start text-gray-300 hover:text-white hover:bg-white/10"
+                        onClick={() => {
+                          router.push(guide.path);
+                        }}
+                      >
+                        <Icon className="h-4 w-4 mr-3 shrink-0" />
+                        <span className="flex-1 text-left truncate">{guide.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Playlists Section */}
           {!isSidebarCollapsed && (
