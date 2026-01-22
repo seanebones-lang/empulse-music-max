@@ -25,6 +25,8 @@ import {
   BarChart3,
   ChevronDown,
   Crown,
+  Info,
+  ExternalLink,
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -282,7 +284,7 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-purple-500/20">
+        <div className="p-4 border-t border-purple-500/20 space-y-2">
           <Button
             variant="ghost"
             className={`w-full justify-start text-white hover:bg-white/10 ${
@@ -291,6 +293,22 @@ export function Sidebar() {
           >
             <Settings className="h-5 w-5 shrink-0" />
             {!isSidebarCollapsed && <span className="ml-3">Settings</span>}
+          </Button>
+          <Button
+            variant="ghost"
+            className={`w-full justify-start text-white hover:bg-white/10 ${
+              isSidebarCollapsed ? 'justify-center' : ''
+            }`}
+            onClick={() => window.open('https://empulse.mothership-ai.com/', '_blank')}
+            title={isSidebarCollapsed ? 'About us' : ''}
+          >
+            <Info className="h-5 w-5 shrink-0" />
+            {!isSidebarCollapsed && (
+              <span className="ml-3 flex items-center gap-2">
+                About us
+                <ExternalLink className="h-3 w-3 opacity-70" />
+              </span>
+            )}
           </Button>
         </div>
       </motion.aside>

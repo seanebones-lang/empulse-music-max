@@ -478,6 +478,35 @@ export default function ArtistDashboard() {
           </TabsContent>
 
           <TabsContent value="earnings" className="space-y-4">
+            {/* Payout Rates Info Card */}
+            <Card className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border-2 border-green-500/50">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shrink-0">
+                    <DollarSign className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-white mb-2">Transparent Payout Rates</h3>
+                    <p className="text-sm text-gray-300 mb-3">
+                      EmPulse pays artists 4-6x the industry average. No small print. No earnings curve. Real money, visible in real time.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-white/10 rounded-lg p-3">
+                        <p className="text-xs text-gray-400 mb-1">Free Streams</p>
+                        <p className="text-2xl font-bold text-white">$0.004</p>
+                        <p className="text-xs text-gray-400 mt-1">per stream</p>
+                      </div>
+                      <div className="bg-white/10 rounded-lg p-3">
+                        <p className="text-xs text-gray-400 mb-1">Premium Streams</p>
+                        <p className="text-2xl font-bold text-white">$0.006</p>
+                        <p className="text-xs text-gray-400 mt-1">per stream</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <Card className="bg-white/5 backdrop-blur-sm border-purple-500/30">
                 <CardContent className="p-6">

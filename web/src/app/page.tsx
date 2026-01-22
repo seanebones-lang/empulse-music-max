@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { usePlayer, type Track } from '@/store/player-store';
 import { Section, ContentCard as ContentCardType } from '@/types/content';
@@ -10,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Dial } from '@/components/ui/dial';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -24,6 +25,12 @@ import {
   Repeat,
   ChevronUp,
   ChevronDown,
+  Heart,
+  Headphones,
+  Radio,
+  Trophy,
+  Gift,
+  Calendar,
 } from 'lucide-react';
 import { Howl } from 'howler';
 import WaveSurfer from 'wavesurfer.js';
@@ -64,6 +71,7 @@ const formatTime = (seconds: number): string => {
 };
 
 export default function Home() {
+  const router = useRouter();
   const {
     queue,
     currentIndex,
@@ -169,9 +177,17 @@ export default function Home() {
       setQueue(card.tracks);
       setCurrentIndex(0);
     } else if (card.type === 'genre' || card.type === 'feature') {
-      // Navigate to genre/feature page (for now, just log)
-      console.log('Navigate to:', card.title, card);
-      // TODO: Implement navigation to genre/feature detail page
+      // Navigate to specific feature pages
+      if (card.id === 'feature-daily-mood-checkin') {
+        router.push('/wellness/checkin');
+      } else if (card.id === 'feature-mood-journal') {
+        router.push('/wellness/journal');
+      } else if (card.id === 'feature-affirmations') {
+        router.push('/wellness/affirmations');
+      } else {
+        console.log('Navigate to:', card.title, card);
+        // TODO: Implement navigation to other feature detail pages
+      }
     } else if (card.type === 'artist') {
       // Navigate to artist page
       console.log('Navigate to artist:', card.title);
@@ -607,12 +623,217 @@ export default function Home() {
 
       {/* Content Sections */}
       <div className="pt-8 space-y-8">
-        {sections?.map((section) => (
-          <ContentSection
-            key={section.id}
-            section={section}
-            onCardClick={handleCardClick}
-          />
+        {sections?.map((section, index) => (
+          <div key={section.id}>
+            {/* Messages from Michelle Card - Above Mood & Wellness */}
+            {section.id === 'mood-wellness' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="mb-6"
+              >
+                <div className="flex items-center justify-between px-2 mb-4">
+                  <h2 className="text-2xl font-bold text-white">Messages from Michelle</h2>
+                </div>
+                <div className="relative">
+                  <div className="overflow-x-auto scrollbar-hide -mx-2 px-2">
+                    <div className="flex gap-4 pb-4">
+                      {/* Messages from Michelle Card */}
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 }}
+                        className="shrink-0"
+                      >
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="group cursor-pointer"
+                        >
+                          <Card className="bg-black border-2 border-purple-500/30 hover:border-purple-400 transition-colors overflow-hidden">
+                            <CardContent className="p-0">
+                              <div className="relative w-48 h-48 overflow-hidden flex items-center justify-center bg-black">
+                                {/* Logo with Headphones Image */}
+                                <Image
+                                  src="/empulse-logo-headphones.png"
+                                  alt="EmPulse Logo with Headphones"
+                                  fill
+                                  className="object-contain p-4"
+                                  unoptimized
+                                />
+                              </div>
+                              <div className="p-3 space-y-1">
+                                <h3 className="font-semibold line-clamp-1 text-white text-sm">
+                                  Messages from Michelle
+                                </h3>
+                                <p className="text-xs text-gray-400 line-clamp-1">
+                                  Updates from the EmPulse team
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      </motion.div>
+
+                      {/* Live Events Card */}
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="shrink-0"
+                      >
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="group cursor-pointer"
+                        >
+                          <Card className="bg-black border-2 border-purple-500/30 hover:border-purple-400 transition-colors overflow-hidden">
+                            <CardContent className="p-0">
+                              <div className="relative w-48 h-48 overflow-hidden flex items-center justify-center bg-black">
+                                <Image
+                                  src="/empulse-logo-headphones.png"
+                                  alt="Live Events"
+                                  fill
+                                  className="object-contain p-4"
+                                  unoptimized
+                                />
+                              </div>
+                              <div className="p-3 space-y-1">
+                                <h3 className="font-semibold line-clamp-1 text-white text-sm">
+                                  Live Events
+                                </h3>
+                                <p className="text-xs text-gray-400 line-clamp-1">
+                                  Upcoming concerts & shows
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      </motion.div>
+
+                      {/* Streaming Events Card */}
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.25 }}
+                        className="shrink-0"
+                      >
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="group cursor-pointer"
+                        >
+                          <Card className="bg-black border-2 border-purple-500/30 hover:border-purple-400 transition-colors overflow-hidden">
+                            <CardContent className="p-0">
+                              <div className="relative w-48 h-48 overflow-hidden flex items-center justify-center bg-black">
+                                <Image
+                                  src="/empulse-logo-headphones.png"
+                                  alt="Streaming Events"
+                                  fill
+                                  className="object-contain p-4"
+                                  unoptimized
+                                />
+                              </div>
+                              <div className="p-3 space-y-1">
+                                <h3 className="font-semibold line-clamp-1 text-white text-sm">
+                                  Streaming Events
+                                </h3>
+                                <p className="text-xs text-gray-400 line-clamp-1">
+                                  Live streams & sessions
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      </motion.div>
+
+                      {/* Contests Card */}
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="shrink-0"
+                      >
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="group cursor-pointer"
+                        >
+                          <Card className="bg-black border-2 border-purple-500/30 hover:border-purple-400 transition-colors overflow-hidden">
+                            <CardContent className="p-0">
+                              <div className="relative w-48 h-48 overflow-hidden flex items-center justify-center bg-black">
+                                <Image
+                                  src="/empulse-logo-headphones.png"
+                                  alt="Contests"
+                                  fill
+                                  className="object-contain p-4"
+                                  unoptimized
+                                />
+                              </div>
+                              <div className="p-3 space-y-1">
+                                <h3 className="font-semibold line-clamp-1 text-white text-sm">
+                                  Contests
+                                </h3>
+                                <p className="text-xs text-gray-400 line-clamp-1">
+                                  Win prizes & rewards
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      </motion.div>
+
+                      {/* Promotions Card */}
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.35 }}
+                        className="shrink-0"
+                      >
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ duration: 0.2 }}
+                          className="group cursor-pointer"
+                        >
+                          <Card className="bg-black border-2 border-purple-500/30 hover:border-purple-400 transition-colors overflow-hidden">
+                            <CardContent className="p-0">
+                              <div className="relative w-48 h-48 overflow-hidden flex items-center justify-center bg-black">
+                                <Image
+                                  src="/empulse-logo-headphones.png"
+                                  alt="Promotions"
+                                  fill
+                                  className="object-contain p-4"
+                                  unoptimized
+                                />
+                              </div>
+                              <div className="p-3 space-y-1">
+                                <h3 className="font-semibold line-clamp-1 text-white text-sm">
+                                  Promotions
+                                </h3>
+                                <p className="text-xs text-gray-400 line-clamp-1">
+                                  Special offers & deals
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      </motion.div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+            <ContentSection
+              section={section}
+              onCardClick={handleCardClick}
+            />
+          </div>
         ))}
       </div>
 
