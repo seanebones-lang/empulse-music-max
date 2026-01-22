@@ -4,9 +4,12 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { usePlayer, type Track } from '@/store/player-store';
+import { Section, ContentCard as ContentCardType } from '@/types/content';
+import { ContentSection } from '@/components/content-section';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Dial } from '@/components/ui/dial';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -19,6 +22,8 @@ import {
   Mic2,
   Shuffle,
   Repeat,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { Howl } from 'howler';
 import WaveSurfer from 'wavesurfer.js';
@@ -34,6 +39,20 @@ const fetchTracks = async (): Promise<Track[]> => {
   } catch (error) {
     console.error('Error fetching tracks:', error);
     // Fallback to empty array
+    return [];
+  }
+};
+
+// Fetch Sections from API
+const fetchSections = async (): Promise<Section[]> => {
+  try {
+    const response = await fetch('/api/sections');
+    if (!response.ok) {
+      throw new Error('Failed to fetch sections');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching sections:', error);
     return [];
   }
 };
@@ -54,6 +73,11 @@ export default function Home() {
     duration,
     shuffle,
     repeat,
+    mood,
+    vibe,
+    isPlayerExpanded,
+    sidebarWidth,
+    isSidebarCollapsed,
     setQueue,
     setCurrentIndex,
     togglePlay,
@@ -62,6 +86,9 @@ export default function Home() {
     setDuration,
     toggleShuffle,
     toggleRepeat,
+    setMood,
+    setVibe,
+    togglePlayerExpanded,
   } = usePlayer();
 
   // Type definitions for Speech Recognition
@@ -119,11 +146,38 @@ export default function Home() {
     queryFn: fetchTracks,
   });
 
+  const { data: sections } = useQuery({
+    queryKey: ['sections'],
+    queryFn: fetchSections,
+  });
+
   useEffect(() => {
     if (tracks) {
       setQueue(tracks);
     }
   }, [tracks, setQueue]);
+
+  const handleCardClick = (card: ContentCardType) => {
+    // Handle different card types
+    if (card.type === 'track' && card.tracks) {
+      // Set queue to tracks and play
+      setQueue(card.tracks);
+      setCurrentIndex(0);
+      togglePlay();
+    } else if (card.type === 'playlist' && card.tracks) {
+      // Set queue to playlist tracks
+      setQueue(card.tracks);
+      setCurrentIndex(0);
+    } else if (card.type === 'genre' || card.type === 'feature') {
+      // Navigate to genre/feature page (for now, just log)
+      console.log('Navigate to:', card.title, card);
+      // TODO: Implement navigation to genre/feature detail page
+    } else if (card.type === 'artist') {
+      // Navigate to artist page
+      console.log('Navigate to artist:', card.title);
+      // TODO: Implement navigation to artist detail page
+    }
+  };
 
   const handleNext = useCallback(() => {
     let nextIdx = currentIndex + 1;
@@ -329,174 +383,237 @@ export default function Home() {
   };
 
   const currentTrack = queue[currentIndex];
+  const sidebarOffset = isSidebarCollapsed ? 64 : sidebarWidth;
 
   return (
-    <main className="min-h-screen p-8 max-w-7xl mx-auto pb-40">
+    <main
+      className="min-h-screen p-8 pb-40 transition-all duration-200"
+      style={{ marginLeft: `${sidebarOffset}px` }}
+    >
       {/* Hero Player */}
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        className="audio-player fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900/90 backdrop-blur-xl border-t border-purple-500/50 p-6 shadow-2xl"
+        className="audio-player fixed bottom-0 z-50 bg-gradient-to-r from-purple-900/90 backdrop-blur-xl border-t border-purple-500/50 shadow-2xl transition-all duration-200"
+        style={{ left: `${sidebarOffset}px` }}
       >
-        <div className="max-w-7xl mx-auto flex items-center gap-6 flex-wrap">
-          {/* Artwork */}
-          {currentTrack && (
-            <Image
-              src={currentTrack.artwork}
-              alt={currentTrack.title}
-              width={80}
-              height={80}
-              className="w-20 h-20 rounded-xl shadow-lg object-cover"
-              unoptimized
-            />
-          )}
-
-          {/* Track Info */}
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold truncate text-white">
-              {currentTrack?.title || 'No track selected'}
-            </h2>
-            <p className="text-sm text-gray-300 truncate">
-              {currentTrack?.artist || ''}
-            </p>
-          </div>
-
-          {/* Controls */}
-          <div className="flex items-center gap-3 flex-wrap">
+        <div className="max-w-7xl mx-auto">
+          {/* Expand/Collapse Toggle */}
+          <div className="flex justify-end p-2">
             <Button
               variant="ghost"
               size="sm"
-              onClick={toggleShuffle}
-              className={shuffle ? 'text-purple-400' : ''}
+              onClick={togglePlayerExpanded}
+              className="text-white hover:bg-white/10"
             >
-              <Shuffle className={`h-5 w-5 ${shuffle ? 'fill-current' : ''}`} />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handlePrevious}>
-              <SkipBack className="h-6 w-6" />
-            </Button>
-            <Button
-              size="lg"
-              onClick={handlePlayPause}
-              className="w-14 h-14 rounded-full bg-white/20 hover:bg-white/30 text-white"
-            >
-              {isPlaying ? (
-                <Pause className="h-6 w-6" />
+              {isPlayerExpanded ? (
+                <ChevronDown className="h-4 w-4" />
               ) : (
-                <Play className="h-6 w-6" />
+                <ChevronUp className="h-4 w-4" />
               )}
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleNext}>
-              <SkipForward className="h-6 w-6" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleRepeat}
-              className={repeat !== 'none' ? 'text-purple-400' : ''}
-            >
-              <Repeat
-                className={`h-5 w-5 ${repeat === 'one' ? 'fill-current' : ''}`}
+          </div>
+
+          {/* Main Player Controls */}
+          <div className="px-6 pb-6 flex items-center gap-6 flex-wrap">
+            {/* Artwork */}
+            {currentTrack && (
+              <Image
+                src={currentTrack.artwork}
+                alt={currentTrack.title}
+                width={80}
+                height={80}
+                className="w-20 h-20 rounded-xl shadow-lg object-cover"
+                unoptimized
               />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleVoiceControl}
-              className={isVoiceActive ? 'text-blue-400' : ''}
-            >
-              <Mic2 className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <Volume2 className="h-5 w-5 text-white" />
-              <Slider
-                className="w-32"
-                value={[volume * 100]}
-                onValueChange={([v]) => setVolume(v / 100)}
-                max={100}
-                step={1}
-              />
+            )}
+
+            {/* Track Info */}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold truncate text-white">
+                {currentTrack?.title || 'No track selected'}
+              </h2>
+              <p className="text-sm text-gray-300 truncate">
+                {currentTrack?.artist || ''}
+              </p>
             </div>
-          </div>
 
-          {/* Progress */}
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <span className="text-sm text-gray-300 whitespace-nowrap">
-              {formatTime(position)}
-            </span>
-            <Slider
-              className="flex-1 md:w-48"
-              value={duration > 0 ? [(position / duration) * 100] : [0]}
-              onValueChange={handleSeek}
-              max={100}
-              step={0.1}
+            {/* Controls */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleShuffle}
+                className={shuffle ? 'text-purple-400' : ''}
+              >
+                <Shuffle className={`h-5 w-5 ${shuffle ? 'fill-current' : ''}`} />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handlePrevious}>
+                <SkipBack className="h-6 w-6" />
+              </Button>
+              <Button
+                size="lg"
+                onClick={handlePlayPause}
+                className="w-14 h-14 rounded-full bg-white/20 hover:bg-white/30 text-white"
+              >
+                {isPlaying ? (
+                  <Pause className="h-6 w-6" />
+                ) : (
+                  <Play className="h-6 w-6" />
+                )}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleNext}>
+                <SkipForward className="h-6 w-6" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleRepeat}
+                className={repeat !== 'none' ? 'text-purple-400' : ''}
+              >
+                <Repeat
+                  className={`h-5 w-5 ${repeat === 'one' ? 'fill-current' : ''}`}
+                />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleVoiceControl}
+                className={isVoiceActive ? 'text-blue-400' : ''}
+              >
+                <Mic2 className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <Volume2 className="h-5 w-5 text-white" />
+                <Slider
+                  className="w-32"
+                  value={[volume * 100]}
+                  onValueChange={([v]) => setVolume(v / 100)}
+                  max={100}
+                  step={1}
+                />
+              </div>
+            </div>
+
+            {/* Progress */}
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <span className="text-sm text-gray-300 whitespace-nowrap">
+                {formatTime(position)}
+              </span>
+              <Slider
+                className="flex-1 md:w-48"
+                value={duration > 0 ? [(position / duration) * 100] : [0]}
+                onValueChange={handleSeek}
+                max={100}
+                step={0.1}
+              />
+              <span className="text-sm text-gray-300 whitespace-nowrap">
+                {formatTime(duration)}
+              </span>
+            </div>
+
+            {/* Waveform Viz */}
+            <div
+              ref={waveformContainerRef}
+              className="w-full md:w-64 h-20 bg-black/50 rounded-lg overflow-hidden"
             />
-            <span className="text-sm text-gray-300 whitespace-nowrap">
-              {formatTime(duration)}
-            </span>
           </div>
 
-          {/* Waveform Viz */}
-          <div
-            ref={waveformContainerRef}
-            className="w-full md:w-64 h-20 bg-black/50 rounded-lg overflow-hidden"
-          />
+          {/* Expanded Mood Controls */}
+          <AnimatePresence>
+            {isPlayerExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden border-t border-purple-500/30"
+              >
+                <div className="px-6 py-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                  {/* Mood Sliders */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-300">
+                      Energy
+                    </label>
+                    <Slider
+                      value={[mood.energy]}
+                      onValueChange={([v]) => setMood({ energy: v })}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                    />
+                    <span className="text-xs text-gray-400">{mood.energy}</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-300">
+                      Happiness
+                    </label>
+                    <Slider
+                      value={[mood.happiness]}
+                      onValueChange={([v]) => setMood({ happiness: v })}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                    />
+                    <span className="text-xs text-gray-400">{mood.happiness}</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-300">
+                      Calmness
+                    </label>
+                    <Slider
+                      value={[mood.calmness]}
+                      onValueChange={([v]) => setMood({ calmness: v })}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                    />
+                    <span className="text-xs text-gray-400">{mood.calmness}</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-300">
+                      Intensity
+                    </label>
+                    <Slider
+                      value={[mood.intensity]}
+                      onValueChange={([v]) => setMood({ intensity: v })}
+                      max={100}
+                      step={1}
+                      className="w-full"
+                    />
+                    <span className="text-xs text-gray-400">{mood.intensity}</span>
+                  </div>
+
+                  {/* Vibe Dial */}
+                  <div className="flex items-center justify-center">
+                    <Dial
+                      value={vibe}
+                      onChange={setVibe}
+                      min={0}
+                      max={100}
+                      size={100}
+                      label="Vibe"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
 
-      {/* Track Grid */}
-      <div className="pt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <AnimatePresence mode="popLayout">
-          {queue.map((track, i) => (
-            <motion.div
-              key={track.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-              className="group"
-              onClick={() => setCurrentIndex(i)}
-            >
-              <Card className="h-full bg-white/5 backdrop-blur-sm border-purple-500/30 hover:border-purple-400 cursor-pointer overflow-hidden transition-colors">
-                <CardContent className="p-0 h-80 flex flex-col">
-                  <div className="relative flex-1 overflow-hidden">
-                    <Image
-                      src={track.artwork}
-                      alt={track.title}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                      unoptimized
-                    />
-                    {i === currentIndex && (
-                      <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
-                        <div className="w-16 h-16 rounded-full bg-purple-600/80 flex items-center justify-center">
-                          {isPlaying ? (
-                            <Pause className="h-8 w-8 text-white" />
-                          ) : (
-                            <Play className="h-8 w-8 text-white ml-1" />
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4 space-y-2">
-                    <h3 className="font-semibold line-clamp-1 text-white">
-                      {track.title}
-                    </h3>
-                    <p className="text-sm text-gray-400 line-clamp-1">
-                      {track.artist}
-                    </p>
-                    <Badge
-                      variant={i === currentIndex ? 'default' : 'secondary'}
-                    >
-                      {formatTime(track.duration)}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+      {/* Content Sections */}
+      <div className="pt-8 space-y-8">
+        {sections?.map((section) => (
+          <ContentSection
+            key={section.id}
+            section={section}
+            onCardClick={handleCardClick}
+          />
+        ))}
       </div>
 
       {/* Voice Sheet */}

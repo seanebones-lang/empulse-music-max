@@ -19,6 +19,16 @@ interface PlayerState {
   shuffle: boolean;
   repeat: 'none' | 'one' | 'all';
   crossfade: number;
+  mood: {
+    energy: number;
+    happiness: number;
+    calmness: number;
+    intensity: number;
+  };
+  vibe: number;
+  isPlayerExpanded: boolean;
+  sidebarWidth: number;
+  isSidebarCollapsed: boolean;
   setQueue: (queue: Track[]) => void;
   setCurrentIndex: (index: number) => void;
   togglePlay: () => void;
@@ -28,6 +38,11 @@ interface PlayerState {
   toggleShuffle: () => void;
   toggleRepeat: () => void;
   setCrossfade: (crossfade: number) => void;
+  setMood: (mood: Partial<PlayerState['mood']>) => void;
+  setVibe: (vibe: number) => void;
+  togglePlayerExpanded: () => void;
+  setSidebarWidth: (width: number) => void;
+  toggleSidebarCollapsed: () => void;
 }
 
 export const usePlayer = create<PlayerState>((set, get) => ({
@@ -40,6 +55,16 @@ export const usePlayer = create<PlayerState>((set, get) => ({
   shuffle: false,
   repeat: 'none',
   crossfade: 2.0,
+  mood: {
+    energy: 50,
+    happiness: 50,
+    calmness: 50,
+    intensity: 50,
+  },
+  vibe: 50,
+  isPlayerExpanded: false,
+  sidebarWidth: 280,
+  isSidebarCollapsed: false,
   setQueue: (queue) => set({ queue }),
   setCurrentIndex: (index) => set({ currentIndex: index }),
   togglePlay: () => set({ isPlaying: !get().isPlaying }),
@@ -53,4 +78,9 @@ export const usePlayer = create<PlayerState>((set, get) => ({
     set({ repeat: next });
   },
   setCrossfade: (crossfade) => set({ crossfade }),
+  setMood: (mood) => set({ mood: { ...get().mood, ...mood } }),
+  setVibe: (vibe) => set({ vibe }),
+  togglePlayerExpanded: () => set({ isPlayerExpanded: !get().isPlayerExpanded }),
+  setSidebarWidth: (width) => set({ sidebarWidth: Math.max(200, Math.min(400, width)) }),
+  toggleSidebarCollapsed: () => set({ isSidebarCollapsed: !get().isSidebarCollapsed }),
 }));
