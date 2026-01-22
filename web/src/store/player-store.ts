@@ -1,0 +1,56 @@
+import { create } from 'zustand';
+
+export type Track = {
+  id: string;
+  title: string;
+  artist: string;
+  url: string;
+  artwork: string;
+  duration: number;
+};
+
+interface PlayerState {
+  queue: Track[];
+  currentIndex: number;
+  isPlaying: boolean;
+  volume: number;
+  position: number;
+  duration: number;
+  shuffle: boolean;
+  repeat: 'none' | 'one' | 'all';
+  crossfade: number;
+  setQueue: (queue: Track[]) => void;
+  setCurrentIndex: (index: number) => void;
+  togglePlay: () => void;
+  setVolume: (volume: number) => void;
+  setPosition: (position: number) => void;
+  setDuration: (duration: number) => void;
+  toggleShuffle: () => void;
+  toggleRepeat: () => void;
+  setCrossfade: (crossfade: number) => void;
+}
+
+export const usePlayer = create<PlayerState>((set, get) => ({
+  queue: [],
+  currentIndex: 0,
+  isPlaying: false,
+  volume: 0.8,
+  position: 0,
+  duration: 0,
+  shuffle: false,
+  repeat: 'none',
+  crossfade: 2.0,
+  setQueue: (queue) => set({ queue }),
+  setCurrentIndex: (index) => set({ currentIndex: index }),
+  togglePlay: () => set({ isPlaying: !get().isPlaying }),
+  setVolume: (volume) => set({ volume }),
+  setPosition: (position) => set({ position }),
+  setDuration: (duration) => set({ duration }),
+  toggleShuffle: () => set({ shuffle: !get().shuffle }),
+  toggleRepeat: () => {
+    const current = get().repeat;
+    const next = current === 'none' ? 'one' : current === 'one' ? 'all' : 'none';
+    set({ repeat: next });
+  },
+  setCrossfade: (crossfade) => set({ crossfade }),
+}));
