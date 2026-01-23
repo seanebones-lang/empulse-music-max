@@ -43,6 +43,8 @@ interface PlayerState {
   togglePlayerExpanded: () => void;
   setSidebarWidth: (width: number) => void;
   toggleSidebarCollapsed: () => void;
+  handleNext: () => void;
+  handlePrevious: () => void;
 }
 
 export const usePlayer = create<PlayerState>((set, get) => ({
@@ -83,4 +85,40 @@ export const usePlayer = create<PlayerState>((set, get) => ({
   togglePlayerExpanded: () => set({ isPlayerExpanded: !get().isPlayerExpanded }),
   setSidebarWidth: (width) => set({ sidebarWidth: Math.max(200, Math.min(400, width)) }),
   toggleSidebarCollapsed: () => set({ isSidebarCollapsed: !get().isSidebarCollapsed }),
+  handleNext: () => {
+    const { currentIndex, queue, shuffle, repeat } = get();
+    
+    // Edge case: Empty queue
+    if (!queue || queue.length === 0) {
+      return;
+    }
+    
+    let nextIdx = currentIndex + 1;
+    if (shuffle) {
+      // Edge case: Prevent division by zero
+      nextIdx = queue.length > 0 ? Math.floor(Math.random() * queue.length) : 0;
+    }
+    if (nextIdx >= queue.length) {
+      nextIdx = repeat === 'all' ? 0 : currentIndex;
+    }
+    set({ currentIndex: nextIdx });
+  },
+  handlePrevious: () => {
+    const { currentIndex, queue, shuffle, repeat } = get();
+    
+    // Edge case: Empty queue
+    if (!queue || queue.length === 0) {
+      return;
+    }
+    
+    let prevIdx = currentIndex - 1;
+    if (shuffle) {
+      // Edge case: Prevent division by zero
+      prevIdx = queue.length > 0 ? Math.floor(Math.random() * queue.length) : 0;
+    }
+    if (prevIdx < 0) {
+      prevIdx = repeat === 'all' ? queue.length - 1 : 0;
+    }
+    set({ currentIndex: prevIdx });
+  },
 }));

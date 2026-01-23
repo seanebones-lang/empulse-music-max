@@ -1,7 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { successResponse, errorResponse, handleApiError } from '@/lib/api-response';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { validateRequest, trackSchema } from '@/lib/validation';
+import { logger } from '@/lib/logger';
+import type { Track } from '@/store/player-store';
 
-// Initialize Supabase client (use environment variables in production)
+// Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
@@ -11,27 +16,44 @@ if (supabaseUrl && supabaseKey) {
   supabase = createClient(supabaseUrl, supabaseKey);
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = checkRateLimit(request, 60, 60 * 1000);
+  if (!rateLimit.allowed) {
+    return errorResponse('Rate limit exceeded', 429, 'Too many requests. Please try again later.');
+  }
+
   // If Supabase is configured, fetch from database
   if (supabase) {
     try {
       const { data, error } = await supabase.from('tracks').select('*');
       if (error) {
-        console.error('Supabase error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        logger.error('Supabase error:', error);
+        return errorResponse(error, 500, 'Failed to fetch tracks from database');
       }
-      return NextResponse.json(data || []);
+
+      // Validate response data
+      if (data && Array.isArray(data)) {
+        const validatedTracks: Track[] = [];
+        for (const item of data) {
+          const validation = validateRequest(trackSchema, item);
+          if (validation.success && validation.data) {
+            validatedTracks.push(validation.data);
+          } else {
+            logger.warn('Invalid track data:', validation.error, item);
+          }
+        }
+        return successResponse(validatedTracks);
+      }
+
+      return successResponse([]);
     } catch (error) {
-      console.error('Error fetching tracks:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch tracks' },
-        { status: 500 }
-      );
+      return handleApiError(error, 'Tracks API');
     }
   }
 
-  // Fallback: Return mock data
-  return NextResponse.json([
+  // Fallback: Return mock data (for development)
+  const mockTracks: Track[] = [
     {
       id: '1',
       title: 'EmPulse Beat 1',
@@ -64,5 +86,8 @@ export async function GET() {
       artwork: 'https://via.placeholder.com/300x300/7c3aed/ffffff?text=Track+4',
       duration: 200,
     },
-  ]);
+  ];
+
+  logger.warn('Using mock tracks data (Supabase not configured)');
+  return successResponse(mockTracks);
 }

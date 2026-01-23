@@ -28,6 +28,7 @@ import {
   Info,
   ExternalLink,
 } from 'lucide-react';
+import { UserMenu } from './user-menu';
 
 export function Sidebar() {
   const router = useRouter();
@@ -290,10 +291,12 @@ export function Sidebar() {
             className={`w-full justify-start text-white hover:bg-white/10 ${
               isSidebarCollapsed ? 'justify-center' : ''
             }`}
+            onClick={() => router.push('/settings')}
           >
             <Settings className="h-5 w-5 shrink-0" />
             {!isSidebarCollapsed && <span className="ml-3">Settings</span>}
           </Button>
+          <UserMenu collapsed={isSidebarCollapsed} />
           <Button
             variant="ghost"
             className={`w-full justify-start text-white hover:bg-white/10 ${

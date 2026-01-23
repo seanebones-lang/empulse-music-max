@@ -2,6 +2,20 @@ import { Track } from '@/store/player-store';
 
 export type ContentType = 'genre' | 'feature' | 'artist' | 'playlist' | 'album' | 'track';
 
+/**
+ * Content card metadata
+ * Extensible metadata object for different content types
+ */
+export interface ContentCardMetadata {
+  trackCount?: number;
+  duration?: number;
+  priority?: string;
+  status?: string;
+  effort?: string;
+  followers?: number;
+  [key: string]: string | number | boolean | undefined;
+}
+
 export type ContentCard = {
   id: string;
   type: ContentType;
@@ -13,12 +27,8 @@ export type ContentCard = {
   items?: ContentCard[];
   // For playlists/albums - contains tracks
   tracks?: Track[];
-  // Metadata
-  metadata?: {
-    trackCount?: number;
-    duration?: number;
-    [key: string]: any;
-  };
+  // Metadata - properly typed
+  metadata?: ContentCardMetadata;
 };
 
 export type Section = {

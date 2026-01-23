@@ -45,14 +45,26 @@ export function Dial({
     isDragging.current = false;
   };
 
-  const handleMove = (e: MouseEvent | React.MouseEvent) => {
+  const handleMove = (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent) => {
     if (!dialRef.current) return;
 
     const rect = dialRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    const clientX = 'clientX' in e ? e.clientX : e.touches?.[0]?.clientX || 0;
-    const clientY = 'clientY' in e ? e.clientY : e.touches?.[0]?.clientY || 0;
+    
+    // Handle both mouse and touch events
+    let clientX = 0;
+    let clientY = 0;
+    
+    if ('clientX' in e && 'clientY' in e) {
+      // Mouse event
+      clientX = e.clientX;
+      clientY = e.clientY;
+    } else if ('touches' in e && e.touches.length > 0) {
+      // Touch event
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    }
 
     const dx = clientX - centerX;
     const dy = clientY - centerY;
@@ -64,17 +76,21 @@ export function Dial({
     onChange(clampedValue);
   };
 
+  const handleTouchMove = (e: TouchEvent) => {
+    handleMouseMove(e);
+  };
+
   React.useEffect(() => {
     if (isDragging.current) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
-      window.addEventListener('touchmove', handleMouseMove as any);
+      window.addEventListener('touchmove', handleTouchMove);
       window.addEventListener('touchend', handleMouseUp);
 
       return () => {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
-        window.removeEventListener('touchmove', handleMouseMove as any);
+        window.removeEventListener('touchmove', handleTouchMove);
         window.removeEventListener('touchend', handleMouseUp);
       };
     }
@@ -96,7 +112,7 @@ export function Dial({
         onMouseDown={handleMouseDown}
         onTouchStart={(e) => {
           isDragging.current = true;
-          handleMove(e.nativeEvent as any);
+          handleMove(e.nativeEvent);
         }}
       >
         {/* Outer ring */}

@@ -31,19 +31,10 @@ import { TrackSkeleton, CardSkeleton } from '@/components/skeleton-loader';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
-// Fetch tracks for library
-const fetchTracks = async (): Promise<Track[]> => {
-  try {
-    const response = await fetch('/api/tracks');
-    if (!response.ok) {
-      throw new Error('Failed to fetch tracks');
-    }
-    return await response.json();
-  } catch (error) {
-    // Error will be handled by React Query's error state
-    return [];
-  }
-};
+// Use shared API utility
+import { fetchTracks } from '@/lib/api';
+import { useLikedTracks } from '@/hooks/use-like-track';
+import { LikeButton } from '@/components/like-button';
 
 // Mock library data
 const mockLikedSongs: Track[] = [
@@ -138,8 +129,16 @@ export default function LibraryPage() {
 
   const { data: tracks = [], isLoading: tracksLoading, error: tracksError } = useQuery({
     queryKey: ['libraryTracks'],
-    queryFn: fetchTracks,
+    queryFn: () => fetchTracks<Track>(),
   });
+
+  // Fetch liked tracks for authenticated users
+  const { data: likedTracks = [], isLoading: likedTracksLoading } = useLikedTracks();
+  
+  // Edge case: Ensure arrays are defined and use liked tracks if available, otherwise use all tracks
+  const displayTracks = (Array.isArray(likedTracks) && likedTracks.length > 0) 
+    ? likedTracks 
+    : (Array.isArray(tracks) ? tracks : []);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -148,18 +147,30 @@ export default function LibraryPage() {
   };
 
   const handlePlayTrack = (track: Track) => {
+    // Edge case: Validate track exists
+    if (!track || !track.id) {
+      toast.error('Invalid track');
+      return;
+    }
+    
     setQueue([track]);
     setCurrentIndex(0);
     togglePlay();
-    toast.success(`Now playing: ${track.title}`);
+    toast.success(`Now playing: ${track.title || 'Track'}`);
   };
 
   const handlePlayPlaylist = (playlist: typeof mockPlaylists[0]) => {
     // TODO: Fetch playlist tracks and play
-    setQueue(mockLikedSongs);
-    setCurrentIndex(0);
-    togglePlay();
-    toast.success(`Now playing: ${playlist.name}`);
+    // For now, use display tracks if available
+    // Edge case: Check array exists and has items
+    if (Array.isArray(displayTracks) && displayTracks.length > 0) {
+      setQueue(displayTracks);
+      setCurrentIndex(0);
+      togglePlay();
+      toast.success(`Now playing: ${playlist.name}`);
+    } else {
+      toast.error('No tracks available to play');
+    }
   };
 
   // Memoized filtered results for better performance
@@ -238,7 +249,7 @@ export default function LibraryPage() {
         </div>
 
         {/* Loading State */}
-        {tracksLoading && (
+        {(tracksLoading || likedTracksLoading) && (
           <div className="py-12 space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {[...Array(6)].map((_, i) => (
@@ -249,7 +260,7 @@ export default function LibraryPage() {
         )}
 
         {/* Error State */}
-        {tracksError && !tracksLoading && (
+        {tracksError && !tracksLoading && !likedTracksLoading && (
           <Card className="bg-red-500/10 backdrop-blur-sm border-red-500/30">
             <CardContent className="p-12 text-center">
               <p className="text-red-400 font-semibold mb-2">Failed to load library</p>
@@ -401,16 +412,21 @@ export default function LibraryPage() {
                 </div>
                 <div>
                   <h2 className="text-3xl font-bold text-white">Liked Songs</h2>
-                  <p className="text-gray-400 mt-1">{mockLikedSongs.length} songs</p>
+                  <p className="text-gray-400 mt-1">
+                    {displayTracks.length} {displayTracks.length === 1 ? 'song' : 'songs'}
+                  </p>
                 </div>
               </div>
               <Button
                 onClick={() => {
-                  setQueue(mockLikedSongs);
-                  setCurrentIndex(0);
-                  togglePlay();
+                  if (displayTracks.length > 0) {
+                    setQueue(displayTracks);
+                    setCurrentIndex(0);
+                    togglePlay();
+                  }
                 }}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                disabled={displayTracks.length === 0}
+                className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
                 size="lg"
               >
                 <Play className="h-5 w-5 mr-2" />
@@ -419,7 +435,7 @@ export default function LibraryPage() {
             </div>
 
             <div className="space-y-2">
-              {mockLikedSongs.map((track, index) => (
+              {displayTracks.map((track, index) => (
                 <motion.div
                   key={track.id}
                   initial={{ opacity: 0, x: 20 }}
@@ -462,13 +478,19 @@ export default function LibraryPage() {
                         >
                           <Play className="h-5 w-5" />
                         </Button>
+                        <LikeButton
+                          trackId={track.id}
+                          size="sm"
+                          variant="ghost"
+                          className="shrink-0"
+                        />
                         <Button
                           variant="ghost"
                           size="icon"
                           className="text-white hover:bg-white/10 shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // TODO: Remove from liked
+                            // TODO: Show menu with more options
                           }}
                         >
                           <MoreVertical className="h-5 w-5" />
@@ -584,7 +606,7 @@ export default function LibraryPage() {
           {/* Recently Played Tab */}
           <TabsContent value="recent" className="space-y-4">
             <div className="space-y-2">
-              {mockLikedSongs.map((track, index) => (
+              {displayTracks.map((track, index) => (
                 <motion.div
                   key={track.id}
                   initial={{ opacity: 0, x: 20 }}

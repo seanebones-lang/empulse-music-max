@@ -1,5 +1,9 @@
-import { NextResponse } from 'next/server';
-import { Section, ContentCard } from '@/types/content';
+import { NextRequest } from 'next/server';
+import { successResponse, errorResponse, handleApiError } from '@/lib/api-response';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { validateRequest, sectionSchema } from '@/lib/validation';
+import { logger } from '@/lib/logger';
+import type { Section } from '@/types/content';
 
 // Mock data - in production, this would come from your database
 const mockSections: Section[] = [
@@ -565,8 +569,30 @@ const mockSections: Section[] = [
   },
 ];
 
-export async function GET() {
-  // In production, fetch from database
-  // For now, return mock data
-  return NextResponse.json(mockSections);
+export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimit = checkRateLimit(request, 60, 60 * 1000);
+  if (!rateLimit.allowed) {
+    return errorResponse('Rate limit exceeded', 429, 'Too many requests. Please try again later.');
+  }
+
+  try {
+    // In production, fetch from database
+    // For now, return mock data
+    // Validate sections before returning
+    const validatedSections: Section[] = [];
+    for (const section of mockSections) {
+      const validation = validateRequest(sectionSchema, section);
+      if (validation.success && validation.data) {
+        validatedSections.push(validation.data);
+      } else {
+        logger.warn('Invalid section data:', validation.error, section.id);
+      }
+    }
+
+    logger.info('Returning sections:', validatedSections.length);
+    return successResponse(validatedSections);
+  } catch (error) {
+    return handleApiError(error, 'Sections API');
+  }
 }

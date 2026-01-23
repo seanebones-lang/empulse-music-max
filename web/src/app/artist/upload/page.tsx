@@ -100,7 +100,10 @@ export default function ArtistUploadPage() {
   const [albumArtPreview, setAlbumArtPreview] = useState<string | null>(null);
   const [trackPreviews, setTrackPreviews] = useState<Record<string, string>>({});
 
-  const updateUploadData = (field: keyof UploadData, value: any) => {
+  const updateUploadData = <K extends keyof UploadData>(
+    field: K,
+    value: UploadData[K]
+  ) => {
     setUploadData((prev) => ({ ...prev, [field]: value }));
     // Clear error when field is updated
     if (errors[field]) {
@@ -112,10 +115,16 @@ export default function ArtistUploadPage() {
     }
   };
 
-  const updateTrack = (index: number, field: string, value: any) => {
+  const updateTrack = (
+    index: number,
+    field: keyof UploadData['tracks'][number],
+    value: UploadData['tracks'][number][keyof UploadData['tracks'][number]]
+  ) => {
     setUploadData((prev) => {
       const newTracks = [...prev.tracks];
-      newTracks[index] = { ...newTracks[index], [field]: value };
+      if (newTracks[index]) {
+        newTracks[index] = { ...newTracks[index], [field]: value };
+      }
       return { ...prev, tracks: newTracks };
     });
   };

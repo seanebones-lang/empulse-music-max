@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LikeButton } from '@/components/like-button';
 import {
   Search as SearchIcon,
   Music,
@@ -27,18 +28,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 // Fetch all tracks for search
-const fetchAllTracks = async (): Promise<Track[]> => {
-  try {
-    const response = await fetch('/api/tracks');
-    if (!response.ok) {
-      throw new Error('Failed to fetch tracks');
-    }
-    return await response.json();
-  } catch (error) {
-    // Error will be handled by React Query's error state
-    return [];
-  }
-};
+// Use shared API utility
+import { fetchTracks } from '@/lib/api';
 
 // Mock artists data
 const mockArtists = [
@@ -78,7 +69,7 @@ export default function SearchPage() {
 
   const { data: tracks = [], isLoading: tracksLoading, error: tracksError } = useQuery({
     queryKey: ['allTracks'],
-    queryFn: fetchAllTracks,
+    queryFn: () => fetchTracks<Track>(),
   });
 
   // Filter tracks based on search query and genre
@@ -404,10 +395,20 @@ export default function SearchPage() {
                               <h3 className="font-semibold text-white truncate">{track.title}</h3>
                               <p className="text-sm text-gray-400 truncate">{track.artist}</p>
                             </div>
+                            <LikeButton
+                              trackId={track.id}
+                              size="sm"
+                              variant="ghost"
+                              className="shrink-0"
+                            />
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-white hover:bg-white/10"
+                              className="text-white hover:bg-white/10 shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTrackClick(track);
+                              }}
                               aria-label={`Play ${track.title}`}
                             >
                               <Play className="h-5 w-5" />

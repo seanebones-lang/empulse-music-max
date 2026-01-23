@@ -5,6 +5,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import { Sidebar } from '@/components/sidebar';
+import { AuthProvider } from '@/components/auth-provider';
 import { useState, useEffect } from 'react';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -45,9 +46,11 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-gradient-to-br from-black via-purple-950 to-indigo-950 min-h-screen`}>
         <QueryClientProvider client={queryClient}>
-          <Sidebar />
-          {children}
-          <Toaster />
+          <AuthProvider>
+            <Sidebar />
+            {children}
+            <Toaster />
+          </AuthProvider>
         </QueryClientProvider>
       </body>
     </html>

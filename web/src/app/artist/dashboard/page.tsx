@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProtectedRoute } from '@/components/protected-route';
+import { useAuth } from '@/hooks/use-auth';
 import {
   TrendingUp,
   Users,
@@ -31,17 +33,18 @@ import { Switch } from '@/components/ui/switch';
 
 export default function ArtistDashboard() {
   const { sidebarWidth, isSidebarCollapsed } = usePlayer();
+  const { user } = useAuth();
   const sidebarOffset = isSidebarCollapsed ? 64 : sidebarWidth;
 
-  // Mock artist data - in production, this would come from your auth/database
+  // Artist data from auth
   const artistData = {
-    name: 'Artist Name',
-    stageName: 'Stage Name',
-    email: 'artist@example.com',
-    avatar: 'https://via.placeholder.com/150/8b5cf6/ffffff?text=Artist',
-    joinDate: '2024-01-15',
-    verified: true,
-    isFounder: true, // Add founder status
+    name: user?.user_metadata?.name || 'Artist Name',
+    stageName: user?.user_metadata?.stageName || 'Stage Name',
+    email: user?.email || 'artist@example.com',
+    avatar: user?.user_metadata?.avatar_url || 'https://via.placeholder.com/150/8b5cf6/ffffff?text=Artist',
+    joinDate: user?.created_at ? new Date(user.created_at).toISOString().split('T')[0] : '2024-01-15',
+    verified: user?.user_metadata?.verified || false,
+    isFounder: user?.user_metadata?.isFounder || false,
     followers: 12500,
     monthlyListeners: 45000,
     totalStreams: 1250000,
@@ -151,10 +154,11 @@ export default function ArtistDashboard() {
   ];
 
   return (
-    <div
-      className="min-h-screen p-8 pb-40 transition-all duration-200"
-      style={{ marginLeft: `${sidebarOffset}px` }}
-    >
+    <ProtectedRoute>
+      <div
+        className="min-h-screen p-8 pb-40 transition-all duration-200"
+        style={{ marginLeft: `${sidebarOffset}px` }}
+      >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Artist Header */}
         <motion.div
@@ -588,5 +592,6 @@ export default function ArtistDashboard() {
         </Tabs>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

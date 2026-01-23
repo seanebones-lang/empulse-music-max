@@ -123,7 +123,10 @@ export default function ArtistSignupPage() {
 
   const [newBandMember, setNewBandMember] = useState('');
 
-  const updateFormData = (field: keyof FormData, value: any) => {
+  const updateFormData = <K extends keyof FormData>(
+    field: K,
+    value: FormData[K]
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 

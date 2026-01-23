@@ -79,6 +79,67 @@ export const sectionSchema = z.object({
 });
 
 /**
+ * Email validation schema
+ */
+export const emailSchema = z.string().email('Invalid email address');
+
+/**
+ * Password validation schema
+ * Requirements:
+ * - Minimum 8 characters
+ * - At least one uppercase letter
+ * - At least one lowercase letter
+ * - At least one number
+ * - At least one special character
+ */
+export const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number')
+  .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character');
+
+/**
+ * Sign in validation schema
+ */
+export const signInSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, 'Password is required'),
+});
+
+/**
+ * Sign up validation schema
+ */
+export const signUpSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+  confirmPassword: z.string(),
+  name: z.string().min(1, 'Name is required').max(100, 'Name too long').optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+});
+
+/**
+ * Password reset request schema
+ */
+export const resetPasswordRequestSchema = z.object({
+  email: emailSchema,
+});
+
+/**
+ * Password reset schema
+ */
+export const resetPasswordSchema = z.object({
+  password: passwordSchema,
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+});
+
+/**
  * API request validation helper
  * 
  * Validates data against a Zod schema and returns a typed result.

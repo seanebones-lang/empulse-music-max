@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProtectedRoute } from '@/components/protected-route';
+import { useAuth } from '@/hooks/use-auth';
 import {
   User,
   Settings,
@@ -24,22 +26,23 @@ import { usePlayer } from '@/store/player-store';
 
 export default function ProfilePage() {
   const { mood, vibe, sidebarWidth, isSidebarCollapsed } = usePlayer();
+  const { user } = useAuth();
   const sidebarOffset = isSidebarCollapsed ? 64 : sidebarWidth;
   const [isEditing, setIsEditing] = useState(false);
 
-  // Mock user data - in production, this would come from your auth/database
+  // User data from auth
   const userData = {
-    name: 'User Name',
-    email: 'user@example.com',
-    avatar: 'https://via.placeholder.com/150/8b5cf6/ffffff?text=User',
-    joinDate: '2024-01-15',
+    name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'User',
+    email: user?.email || 'user@example.com',
+    avatar: user?.user_metadata?.avatar_url || 'https://via.placeholder.com/150/8b5cf6/ffffff?text=User',
+    joinDate: user?.created_at ? new Date(user.created_at).toISOString().split('T')[0] : '2024-01-15',
     totalPoints: 1250,
     currentStreak: 7,
     longestStreak: 12,
     totalCheckIns: 45,
     avgMood: 72,
     avgEnergy: 68,
-    isFounder: true, // Add founder status
+    isFounder: user?.user_metadata?.isFounder || false,
   };
 
   const recentMoods = [
@@ -59,10 +62,11 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div
-      className="min-h-screen p-8 pb-40 transition-all duration-200"
-      style={{ marginLeft: `${sidebarOffset}px` }}
-    >
+    <ProtectedRoute>
+      <div
+        className="min-h-screen p-8 pb-40 transition-all duration-200"
+        style={{ marginLeft: `${sidebarOffset}px` }}
+      >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Profile Header */}
         <motion.div
@@ -456,5 +460,6 @@ export default function ProfilePage() {
         </Tabs>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

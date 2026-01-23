@@ -34,41 +34,9 @@ import {
 } from 'lucide-react';
 import { Howl } from 'howler';
 import WaveSurfer from 'wavesurfer.js';
-
-// Fetch Tracks from API
-const fetchTracks = async (): Promise<Track[]> => {
-  try {
-    const response = await fetch('/api/tracks');
-    if (!response.ok) {
-      throw new Error('Failed to fetch tracks');
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching tracks:', error);
-    // Fallback to empty array
-    return [];
-  }
-};
-
-// Fetch Sections from API
-const fetchSections = async (): Promise<Section[]> => {
-  try {
-    const response = await fetch('/api/sections');
-    if (!response.ok) {
-      throw new Error('Failed to fetch sections');
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching sections:', error);
-    return [];
-  }
-};
-
-const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
+import { formatTime } from '@/lib/utils';
+import { fetchTracks, fetchSections } from '@/lib/api';
+import { useVoiceControl } from '@/hooks/use-voice-control';
 
 export default function Home() {
   const router = useRouter();
@@ -97,162 +65,63 @@ export default function Home() {
     setMood,
     setVibe,
     togglePlayerExpanded,
+    handleNext,
+    handlePrevious,
   } = usePlayer();
-
-  // Type definitions for Speech Recognition
-  interface SpeechRecognition extends EventTarget {
-    continuous: boolean;
-    interimResults: boolean;
-    lang: string;
-    start(): void;
-    stop(): void;
-    onresult: (event: SpeechRecognitionEvent) => void;
-    onerror: (event: Event) => void;
-  }
-
-  interface SpeechRecognitionEvent {
-    results: SpeechRecognitionResultList;
-  }
-
-  interface SpeechRecognitionResultList {
-    length: number;
-    [index: number]: SpeechRecognitionResult;
-  }
-
-  interface SpeechRecognitionResult {
-    [index: number]: SpeechRecognitionAlternative;
-    isFinal: boolean;
-  }
-
-  interface SpeechRecognitionAlternative {
-    transcript: string;
-    confidence: number;
-  }
-
-  interface WindowWithSpeechRecognition extends Window {
-    webkitSpeechRecognition?: new () => SpeechRecognition;
-    SpeechRecognition?: new () => SpeechRecognition;
-    webkitAudioContext?: typeof AudioContext;
-  }
 
   const playerRef = useRef<Howl | null>(null);
   const waveformRef = useRef<WaveSurfer | null>(null);
   const waveformContainerRef = useRef<HTMLDivElement>(null);
   const [audioContext] = useState(() => {
     if (typeof window !== 'undefined') {
-      const win = window as WindowWithSpeechRecognition;
+      const win = window as import('@/types/speech').WindowWithSpeechRecognition;
       return new (window.AudioContext || win.webkitAudioContext || AudioContext)();
     }
     return null;
   });
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const [isVoiceActive, setIsVoiceActive] = useState(false);
   const positionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { isVoiceActive, toggleVoiceControl } = useVoiceControl({
+    isPlaying,
+    togglePlay,
+    onNext: handleNext,
+    onPrevious: handlePrevious,
+  });
 
   const { data: tracks } = useQuery({
     queryKey: ['tracks'],
-    queryFn: fetchTracks,
+    queryFn: () => fetchTracks<Track>(),
   });
 
   const { data: sections } = useQuery({
     queryKey: ['sections'],
-    queryFn: fetchSections,
+    queryFn: () => fetchSections<Section>(),
   });
 
+  // Sync tracks to store when loaded
   useEffect(() => {
-    if (tracks) {
+    if (tracks && tracks.length > 0) {
       setQueue(tracks);
     }
   }, [tracks, setQueue]);
 
   const handleCardClick = (card: ContentCardType) => {
-    // Handle different card types
     if (card.type === 'track' && card.tracks) {
-      // Set queue to tracks and play
       setQueue(card.tracks);
       setCurrentIndex(0);
       togglePlay();
     } else if (card.type === 'playlist' && card.tracks) {
-      // Set queue to playlist tracks
       setQueue(card.tracks);
       setCurrentIndex(0);
     } else if (card.type === 'genre' || card.type === 'feature') {
-      // Navigate to specific feature pages
-      if (card.id === 'feature-daily-mood-checkin') {
-        router.push('/wellness/checkin');
-      } else if (card.id === 'feature-mood-journal') {
-        router.push('/wellness/journal');
-      } else if (card.id === 'feature-affirmations') {
-        router.push('/wellness/affirmations');
-      } else {
-        console.log('Navigate to:', card.title, card);
-        // TODO: Implement navigation to other feature detail pages
-      }
+      if (card.id === 'feature-daily-mood-checkin') router.push('/wellness/checkin');
+      else if (card.id === 'feature-mood-journal') router.push('/wellness/journal');
+      else if (card.id === 'feature-affirmations') router.push('/wellness/affirmations');
+      // TODO: other feature/artist routes
     } else if (card.type === 'artist') {
-      // Navigate to artist page
-      console.log('Navigate to artist:', card.title);
-      // TODO: Implement navigation to artist detail page
+      // TODO: router.push(`/artist/${card.id}`);
     }
   };
-
-  const handleNext = useCallback(() => {
-    let nextIdx = currentIndex + 1;
-    if (shuffle) {
-      nextIdx = Math.floor(Math.random() * queue.length);
-    }
-    if (nextIdx >= queue.length) {
-      nextIdx = repeat === 'all' ? 0 : currentIndex;
-    }
-    setCurrentIndex(nextIdx);
-  }, [currentIndex, shuffle, repeat, queue.length, setCurrentIndex]);
-
-  const handlePrevious = useCallback(() => {
-    let prevIdx = currentIndex - 1;
-    if (shuffle) {
-      prevIdx = Math.floor(Math.random() * queue.length);
-    }
-    if (prevIdx < 0) {
-      prevIdx = repeat === 'all' ? queue.length - 1 : 0;
-    }
-    setCurrentIndex(prevIdx);
-  }, [currentIndex, shuffle, repeat, queue.length, setCurrentIndex]);
-
-  // Initialize voice recognition
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const win = window as WindowWithSpeechRecognition;
-      const SpeechRecognition =
-        win.webkitSpeechRecognition || win.SpeechRecognition;
-      if (SpeechRecognition) {
-        const rec = new SpeechRecognition();
-        rec.continuous = true;
-        rec.interimResults = false;
-        rec.lang = 'en-US';
-
-        rec.onresult = (e: SpeechRecognitionEvent) => {
-          const transcript = e.results[e.results.length - 1][0].transcript.toLowerCase();
-          if (transcript.includes('play')) {
-            togglePlay();
-          }
-          if (transcript.includes('pause')) {
-            if (isPlaying) togglePlay();
-          }
-          if (transcript.includes('next')) {
-            handleNext();
-          }
-          if (transcript.includes('previous') || transcript.includes('back')) {
-            handlePrevious();
-          }
-        };
-
-        rec.onerror = () => {
-          setIsVoiceActive(false);
-        };
-
-        recognitionRef.current = rec;
-      }
-    }
-  }, [isPlaying, togglePlay, currentIndex, shuffle, repeat, queue.length, setCurrentIndex, handleNext, handlePrevious]);
 
   // Initialize and manage audio player
   useEffect(() => {
@@ -317,11 +186,8 @@ export default function Home() {
           console.error('Failed to initialize waveform:', error);
         }
       },
-      onerror: (id, error) => {
-        console.error('Howl audio loading error:', error);
-      },
-      onerror: (id, error) => {
-        console.error('Howl audio loading error:', error);
+      onerror: (_id, err) => {
+        console.error('Howl audio loading error:', err);
       },
       onplay: () => {
         waveformRef.current?.play();
@@ -402,18 +268,6 @@ export default function Home() {
     }
     if (waveformRef.current) {
       waveformRef.current.seekTo(newPosition / duration);
-    }
-  };
-
-  const toggleVoiceControl = () => {
-    if (recognitionRef.current) {
-      if (isVoiceActive) {
-        recognitionRef.current.stop();
-        setIsVoiceActive(false);
-      } else {
-        recognitionRef.current.start();
-        setIsVoiceActive(true);
-      }
     }
   };
 

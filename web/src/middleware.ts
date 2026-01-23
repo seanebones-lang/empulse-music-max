@@ -37,7 +37,7 @@ const publicRoutes = [
  * @param {NextRequest} request - The incoming request
  * @returns {NextResponse} Response with appropriate headers or redirect
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Check if route is protected
@@ -45,21 +45,38 @@ export function middleware(request: NextRequest) {
     pathname.startsWith(route)
   );
   
+  // Check if route is public (auth pages)
+  const isAuthRoute = pathname.startsWith('/auth');
+  const isPublicRoute = publicRoutes.some((route) =>
+    pathname === route || pathname.startsWith(route)
+  );
+  
   // For protected routes, check authentication
-  // In a real implementation, you would check the session here
-  // For now, we'll allow access but add headers for future auth checks
   if (isProtectedRoute) {
-    // Check for auth token in cookies or headers
-    const authToken = request.cookies.get('sb-access-token')?.value ||
-                      request.headers.get('authorization');
+    // Check for Supabase session in cookies
+    const accessToken = request.cookies.get('sb-access-token')?.value;
+    const refreshToken = request.cookies.get('sb-refresh-token')?.value;
     
-    // If no auth token and route is protected, you could redirect to login
-    // For now, we'll just add a header indicating auth status
+    // If no tokens, redirect to login
+    if (!accessToken && !refreshToken) {
+      const loginUrl = new URL('/auth/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    
+    // Add auth headers for API routes
     const response = NextResponse.next();
     response.headers.set('X-Auth-Required', 'true');
-    response.headers.set('X-Auth-Status', authToken ? 'authenticated' : 'unauthenticated');
-    
+    response.headers.set('X-Auth-Status', 'authenticated');
     return response;
+  }
+  
+  // If user is authenticated and tries to access auth pages, redirect to home
+  if (isAuthRoute && (pathname === '/auth/login' || pathname === '/auth/signup')) {
+    const accessToken = request.cookies.get('sb-access-token')?.value;
+    if (accessToken) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
   }
   
   return NextResponse.next();

@@ -151,8 +151,6 @@ export function runContrastChecks(): void {
 
 // Export for use in browser console or Node.js
 if (typeof window !== 'undefined') {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (window as any).checkContrast = checkContrast;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (window as any).runContrastChecks = runContrastChecks;
+  window.checkContrast = checkContrast;
+  window.runContrastChecks = runContrastChecks;
 }

@@ -13,9 +13,15 @@ import { Toaster as Sonner, type ToasterProps } from "sonner"
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
 
+  // Type guard to ensure theme is valid
+  const validTheme: ToasterProps["theme"] = 
+    theme === "light" || theme === "dark" || theme === "system" 
+      ? theme 
+      : "system";
+
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={validTheme}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,
