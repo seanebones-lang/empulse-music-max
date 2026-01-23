@@ -256,7 +256,8 @@ export default function Home() {
 
   // Initialize and manage audio player
   useEffect(() => {
-    if (!queue[currentIndex]?.url || !audioContext) return;
+    const currentTrack = queue[currentIndex];
+    if (!currentTrack?.url || !audioContext) return;
 
     // Cleanup previous player
     if (playerRef.current) {
@@ -264,10 +265,12 @@ export default function Home() {
     }
     if (waveformRef.current) {
       waveformRef.current.destroy();
+      waveformRef.current = null;
     }
 
+    const trackUrl = currentTrack.url;
     const howl = new Howl({
-      src: [queue[currentIndex].url],
+      src: [trackUrl],
       html5: true,
       volume,
       format: ['mp3', 'opus', 'aac'],
@@ -275,8 +278,15 @@ export default function Home() {
         const trackDuration = howl.duration();
         setDuration(trackDuration);
 
+        // Double-check that the track still exists and container is available
+        const track = queue[currentIndex];
+        if (!track?.url || !waveformContainerRef.current) {
+          console.warn('Track or container unavailable for waveform');
+          return;
+        }
+
         // Initialize WaveSurfer
-        if (waveformContainerRef.current) {
+        try {
           waveformRef.current = WaveSurfer.create({
             container: waveformContainerRef.current,
             waveColor: '#a855f7',
@@ -289,10 +299,10 @@ export default function Home() {
             mediaControls: false,
           });
 
-          waveformRef.current.load(queue[currentIndex].url);
+          waveformRef.current.load(track.url);
           waveformRef.current.on('ready', () => {
-            if (isPlaying) {
-              waveformRef.current?.play();
+            if (isPlaying && waveformRef.current) {
+              waveformRef.current.play();
             }
           });
 
@@ -303,7 +313,15 @@ export default function Home() {
               howl.seek(newPosition);
             }
           });
+        } catch (error) {
+          console.error('Failed to initialize waveform:', error);
         }
+      },
+      onerror: (id, error) => {
+        console.error('Howl audio loading error:', error);
+      },
+      onerror: (id, error) => {
+        console.error('Howl audio loading error:', error);
       },
       onplay: () => {
         waveformRef.current?.play();
@@ -328,6 +346,7 @@ export default function Home() {
       }
       if (waveformRef.current) {
         waveformRef.current.destroy();
+        waveformRef.current = null;
       }
     };
   }, [queue, currentIndex, audioContext, isPlaying, volume, setDuration, setPosition, repeat, handleNext]);
