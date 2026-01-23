@@ -88,12 +88,12 @@ export default function Home() {
     onPrevious: handlePrevious,
   });
 
-  const { data: tracks } = useQuery({
+  const { data: tracks, isLoading: tracksLoading, error: tracksError } = useQuery({
     queryKey: ['tracks'],
     queryFn: () => fetchTracks<Track>(),
   });
 
-  const { data: sections } = useQuery({
+  const { data: sections, isLoading: sectionsLoading, error: sectionsError } = useQuery({
     queryKey: ['sections'],
     queryFn: () => fetchSections<Section>(),
   });
@@ -496,6 +496,21 @@ export default function Home() {
 
       {/* Content Sections */}
       <div className="pt-8 space-y-8">
+        {sectionsLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-white">Loading content...</div>
+          </div>
+        )}
+        {sectionsError && (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-red-400">Error loading content: {sectionsError.message}</div>
+          </div>
+        )}
+        {!sectionsLoading && !sectionsError && sections && sections.length === 0 && (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-400">No content available</div>
+          </div>
+        )}
         {sections?.map((section, index) => (
           <div key={section.id}>
             {/* Messages from Michelle Card - Above Mood & Wellness */}

@@ -146,12 +146,12 @@ export function ContentCard({
               {card.title}
             </h3>
             {card.subtitle && (
-              <p className="text-xs text-gray-400 line-clamp-1">
+              <p className="text-xs text-gray-300 line-clamp-1">
                 {card.subtitle}
               </p>
             )}
             {card.metadata?.trackCount && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-400">
                 {card.metadata.trackCount} tracks
               </p>
             )}
